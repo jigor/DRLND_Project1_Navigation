@@ -1,0 +1,8 @@
+Banana_Linux.zip
+Banana_Linux/*
+unity-environment.log
+.vscode/settings.json
+.ipynb_checkpoints/Navigation-checkpoint.ipynb
+__pycache__/*
+Banana_Windows_x86_64
+*.swp

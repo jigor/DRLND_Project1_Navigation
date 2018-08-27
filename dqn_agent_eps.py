@@ -12,7 +12,7 @@ import hyperparmeters as hyp
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-class Agent():
+class Agent_eps():
     """Interacts with and learns from the environment."""
 
     def __init__(self, state_size, action_size, seed, dueling_dqn = False):
@@ -25,16 +25,17 @@ class Agent():
             seed (int): random seed
         """
         self.state_size = state_size
-        self.action_size = action_size
-        self.seed = random.seed(seed)        
+        self.action_size = action_size + 1
+        self.seed = random.seed(seed)
+        #self.eps = 0.
 
         # Q-Network
-        self.qnetwork_local = QNetwork(state_size, action_size, seed, dueling_dqn, False).to(device)
-        self.qnetwork_target = QNetwork(state_size, action_size, seed, dueling_dqn, False).to(device)
+        self.qnetwork_local = QNetwork(state_size, self.action_size, seed, dueling_dqn=dueling_dqn, dueling_with_learn_eps=dueling_dqn ).to(device)
+        self.qnetwork_target = QNetwork(state_size, self.action_size, seed, dueling_dqn=dueling_dqn, dueling_with_learn_eps=dueling_dqn ).to(device)
         self.optimizer = optim.Adam(self.qnetwork_local.parameters(), lr=hyp.LR)
 
         # Replay memory
-        self.memory = ReplayBuffer(action_size, hyp.BUFFER_SIZE, hyp.BATCH_SIZE, seed)
+        self.memory = ReplayBuffer(self.action_size, hyp.BUFFER_SIZE, hyp.BATCH_SIZE, seed)
         # Initialize time step (for updating every UPDATE_EVERY steps)
         self.t_step = 0
     
@@ -50,7 +51,7 @@ class Agent():
                 experiences = self.memory.sample()
                 self.learn(experiences, hyp.GAMMA)
 
-    def act(self, state, eps=0.):
+    def act(self, state):
         """Returns actions for given state as per current policy.
         
         Params
@@ -65,10 +66,11 @@ class Agent():
         self.qnetwork_local.train()
 
         # Epsilon-greedy action selection
-        if random.random() > eps:
-            return np.argmax(action_values.cpu().data.numpy())
+        #print("\rAction values: {}".format(action_values), end="")
+        if random.random() > action_values[0][-1]:
+            return (np.argmax(action_values[0][:-1].cpu().data.numpy()), action_values[0][-1])
         else:
-            return random.choice(np.arange(self.action_size))
+            return (random.choice(np.arange(self.action_size-1)), action_values[0][-1])
 
     def learn(self, experiences, gamma):
         """Update value parameters using given batch of experience tuples.
